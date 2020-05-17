@@ -1,0 +1,249 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Outputs:
+  DeploymentHistoryTag:
+    Description: Stackery Deployment History Tag
+    Value: BJDOHU
+Parameters:
+  DeploymentTimestamp:
+    Default: '1589086156077'
+    Description: Deployment preparation timestamp in milliseconds Since Epoch (injected
+      by Stackery at deployment time)
+    Type: Number
+  EnvironmentTagName:
+    Default: FreeFlow-Dev
+    Description: Environment Name (injected by Stackery at deployment time)
+    Type: String
+  StackTagName:
+    Default: stSchemaPentair
+    Description: Stack Name (injected by Stackery at deployment time)
+    Type: String
+Resources:
+  DeploymentMarkerTagBJDOHU:
+    Type: AWS::CloudFormation::WaitConditionHandle
+  UserPool:
+    DependsOn: DeploymentMarkerTagBJDOHU
+    Properties:
+      AdminCreateUserConfig:
+        AllowAdminCreateUserOnly: false
+      AliasAttributes:
+      - email
+      - preferred_username
+      AutoVerifiedAttributes:
+      - email
+      UserPoolName:
+        Fn::Sub: ${AWS::StackName}-UserPool
+    Type: AWS::Cognito::UserPool
+  UserPoolClient:
+    DependsOn: DeploymentMarkerTagBJDOHU
+    Properties:
+      UserPoolId:
+        Ref: UserPool
+    Type: AWS::Cognito::UserPoolClient
+  deployFrontEnd:
+    DependsOn: DeploymentMarkerTagBJDOHU
+    Properties:
+      CodeUri: s3://stackery-assetsbucket-9ecdeb79lq2q/deployments/FreeFlow-Dev/stSchemaPentair/functions/796888259677f3dc038d12c6b550490d
+      Description:
+        Fn::Sub:
+        - Stack ${StackTagName} Environment ${EnvironmentTagName} Function ${ResourceName}
+        - ResourceName: deployFrontEnd
+      Environment:
+        Variables:
+          BUCKET_ARN:
+            Fn::GetAtt:
+            - frontEnd
+            - Arn
+          BUCKET_NAME:
+            Ref: frontEnd
+      FunctionName:
+        Fn::Sub: ${AWS::StackName}-deployFrontEnd
+      Handler: index.handler
+      MemorySize: 3008
+      Policies:
+      - AWSXrayWriteOnlyAccess
+      - S3CrudPolicy:
+          BucketName:
+            Ref: frontEnd
+      Runtime: nodejs12.x
+      Timeout: 30
+      Tracing: Active
+    Type: AWS::Serverless::Function
+  deployFrontEndDeployTrigger:
+    DependsOn: DeploymentMarkerTagBJDOHU
+    Properties:
+      DeploymentTimestamp:
+        Ref: DeploymentTimestamp
+      ServiceToken:
+        Fn::GetAtt:
+        - deployFrontEnd
+        - Arn
+    Type: Custom::FunctionDeployTrigger
+  frontEnd:
+    DependsOn: DeploymentMarkerTagBJDOHU
+    Properties:
+      BucketName:
+        Fn::Sub: ${AWS::StackName}-frontend-${AWS::AccountId}
+      WebsiteConfiguration:
+        IndexDocument: index.html
+    Type: AWS::S3::Bucket
+  getEvent:
+    DependsOn: DeploymentMarkerTagBJDOHU
+    Properties:
+      CodeUri: s3://stackery-assetsbucket-9ecdeb79lq2q/deployments/FreeFlow-Dev/stSchemaPentair/functions/c59296b9f8e8ae29ee9a93601aa96b05
+      Description:
+        Fn::Sub:
+        - Stack ${StackTagName} Environment ${EnvironmentTagName} Function ${ResourceName}
+        - ResourceName: getEvent
+      Environment:
+        Variables:
+          QUEUE_ARN:
+            Fn::GetAtt:
+            - queuedJobs
+            - Arn
+          QUEUE_ARN_2:
+            Fn::GetAtt:
+            - queuedJobs
+            - Arn
+          QUEUE_NAME:
+            Fn::GetAtt:
+            - queuedJobs
+            - QueueName
+          QUEUE_NAME_2:
+            Fn::GetAtt:
+            - queuedJobs
+            - QueueName
+          QUEUE_URL:
+            Ref: queuedJobs
+          QUEUE_URL_2:
+            Ref: queuedJobs
+          TABLE_ARN:
+            Fn::GetAtt:
+            - pentairCreds
+            - Arn
+          TABLE_NAME:
+            Ref: pentairCreds
+      Events:
+        stSchemaConnectorGET:
+          Properties:
+            ApiId:
+              Ref: stSchemaConnector
+            Method: GET
+            Path: /
+            PayloadFormatVersion: '2.0'
+            TimeoutInMillis: 29000
+          Type: HttpApi
+      FunctionName:
+        Fn::Sub: ${AWS::StackName}-getEvent
+      Handler: index.handler
+      MemorySize: 3008
+      Policies:
+      - AWSXrayWriteOnlyAccess
+      - SQSSendMessagePolicy:
+          QueueName:
+            Fn::GetAtt:
+            - queuedJobs
+            - QueueName
+      - SQSSendMessagePolicy:
+          QueueName:
+            Fn::GetAtt:
+            - queuedJobs
+            - QueueName
+      - DynamoDBCrudPolicy:
+          TableName:
+            Ref: pentairCreds
+      Runtime: nodejs12.x
+      Timeout: 30
+      Tracing: Active
+    Type: AWS::Serverless::Function
+  pentairCreds:
+    DependsOn: DeploymentMarkerTagBJDOHU
+    Properties:
+      AttributeDefinitions:
+      - AttributeName: ffUserId
+        AttributeType: S
+      BillingMode: PAY_PER_REQUEST
+      KeySchema:
+      - AttributeName: ffUserId
+        KeyType: HASH
+      StreamSpecification:
+        StreamViewType: NEW_AND_OLD_IMAGES
+    Type: AWS::DynamoDB::Table
+  queuedJobs:
+    DependsOn: DeploymentMarkerTagBJDOHU
+    Properties:
+      QueueName:
+        Fn::Sub: ${AWS::StackName}-queuedJobs
+    Type: AWS::SQS::Queue
+  stSchema:
+    DependsOn: DeploymentMarkerTagBJDOHU
+    Properties:
+      CodeUri: s3://stackery-assetsbucket-9ecdeb79lq2q/deployments/FreeFlow-Dev/stSchemaPentair/functions/9c56e3968bf3fb7561e94779856a45b2
+      Description:
+        Fn::Sub:
+        - Stack ${StackTagName} Environment ${EnvironmentTagName} Function ${ResourceName}
+        - ResourceName: stSchema
+      Environment:
+        Variables:
+          TABLE_ARN:
+            Fn::GetAtt:
+            - pentairCreds
+            - Arn
+          TABLE_NAME:
+            Ref: pentairCreds
+      Events:
+        stSchemaConnectorPOSTstSchema:
+          Properties:
+            ApiId:
+              Ref: stSchemaConnector
+            Method: POST
+            Path: /stSchema
+            PayloadFormatVersion: '2.0'
+            TimeoutInMillis: 29000
+          Type: HttpApi
+      FunctionName:
+        Fn::Sub: ${AWS::StackName}-stSchema
+      Handler: index.handler
+      MemorySize: 3008
+      Policies:
+      - AWSXrayWriteOnlyAccess
+      - DynamoDBCrudPolicy:
+          TableName:
+            Ref: pentairCreds
+      Runtime: nodejs12.x
+      Timeout: 30
+      Tracing: Active
+    Type: AWS::Serverless::Function
+  stSchemaConnector:
+    DependsOn: DeploymentMarkerTagBJDOHU
+    Properties:
+      Auth:
+        Authorizers:
+          apiAuthorizer:
+            IdentitySource: $request.header.Authorization
+            JwtConfiguration:
+              audience:
+              - Ref: UserPoolClient
+              issuer:
+                Fn::Sub: https://cognito-idp.${AWS::Region}.amazonaws.com/${UserPool}
+        DefaultAuthorizer: apiAuthorizer
+      CorsConfiguration:
+        AllowMethods:
+        - '*'
+        AllowOrigins:
+        - '*'
+      DefinitionBody:
+        info:
+          title:
+            Fn::Sub: ${AWS::StackName}-HttpApi
+          version: '1.0'
+        openapi: '3.0'
+        paths:
+          /:
+            get:
+              responses: {}
+          /stSchema:
+            post:
+              responses: {}
+      FailOnWarnings: true
+    Type: AWS::Serverless::HttpApi
+Transform: AWS::Serverless-2016-10-31

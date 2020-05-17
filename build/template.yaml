@@ -1,0 +1,293 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Outputs:
+  DeploymentHistoryTag:
+    Description: Stackery Deployment History Tag
+    Value: OHFMQQ
+Parameters:
+  DeploymentTimestamp:
+    Default: '1589737365553'
+    Description: Deployment preparation timestamp in milliseconds Since Epoch (injected
+      by Stackery at deployment time)
+    Type: Number
+  EnvironmentTagName:
+    Default: FreeFlow-Dev
+    Description: Environment Name (injected by Stackery at deployment time)
+    Type: String
+  StackTagName:
+    Default: stSchemaPentair
+    Description: Stack Name (injected by Stackery at deployment time)
+    Type: String
+Resources:
+  DeploymentMarkerTagOHFMQQ:
+    Type: AWS::CloudFormation::WaitConditionHandle
+  StUserPoolClient:
+    DependsOn: DeploymentMarkerTagOHFMQQ
+    Properties:
+      AllowedOAuthFlows:
+      - implicit
+      AllowedOAuthFlowsUserPoolClient: true
+      AllowedOAuthScopes:
+      - phone
+      - email
+      - openid
+      - profile
+      - aws.cognito.signin.user.admin
+      CallbackURLs:
+      - https://localhost:3000
+      ClientName:
+        Fn::Sub: ${AWS::StackName}-StUserPoolClient
+      ExplicitAuthFlows:
+      - ALLOW_USER_SRP_AUTH
+      - ALLOW_REFRESH_TOKEN_AUTH
+      GenerateSecret: true
+      SupportedIdentityProviders:
+      - COGNITO
+      UserPoolId:
+        Ref: UserPool
+    Type: AWS::Cognito::UserPoolClient
+  UserPool:
+    DependsOn: DeploymentMarkerTagOHFMQQ
+    Properties:
+      AdminCreateUserConfig:
+        AllowAdminCreateUserOnly: false
+      AliasAttributes:
+      - email
+      - preferred_username
+      AutoVerifiedAttributes:
+      - email
+      Schema:
+      - Mutable: true
+        Name: email
+        Required: true
+      - Mutable: true
+        Name: name
+        Required: true
+      - Mutable: true
+        Name: preferred_username
+      - AttributeDataType: String
+        Mutable: true
+        Name: pentair_username
+      - AttributeDataType: String
+        Mutable: true
+        Name: pentair_password
+      UserPoolName:
+        Fn::Sub: ${AWS::StackName}-UserPool
+    Type: AWS::Cognito::UserPool
+  UserPoolDomain:
+    DependsOn: DeploymentMarkerTagOHFMQQ
+    Properties:
+      Domain: freeflow-dev
+      UserPoolId:
+        Ref: UserPool
+    Type: AWS::Cognito::UserPoolDomain
+  WebUserPoolClient:
+    DependsOn: DeploymentMarkerTagOHFMQQ
+    Properties:
+      AllowedOAuthFlows:
+      - implicit
+      AllowedOAuthFlowsUserPoolClient: true
+      AllowedOAuthScopes:
+      - phone
+      - email
+      - openid
+      - profile
+      - aws.cognito.signin.user.admin
+      CallbackURLs:
+      - https://localhost:3000
+      ClientName:
+        Fn::Sub: ${AWS::StackName}-WebUserPoolClient
+      ExplicitAuthFlows:
+      - ALLOW_USER_SRP_AUTH
+      - ALLOW_REFRESH_TOKEN_AUTH
+      GenerateSecret: false
+      SupportedIdentityProviders:
+      - COGNITO
+      UserPoolId:
+        Ref: UserPool
+    Type: AWS::Cognito::UserPoolClient
+  deployFrontEnd:
+    DependsOn: DeploymentMarkerTagOHFMQQ
+    Properties:
+      CodeUri: deployFrontEnd
+      Description:
+        Fn::Sub:
+        - Stack ${StackTagName} Environment ${EnvironmentTagName} Function ${ResourceName}
+        - ResourceName: deployFrontEnd
+      Environment:
+        Variables:
+          BUCKET_ARN:
+            Fn::GetAtt:
+            - frontEnd
+            - Arn
+          BUCKET_NAME:
+            Ref: frontEnd
+      FunctionName:
+        Fn::Sub: ${AWS::StackName}-deployFrontEnd
+      Handler: index.handler
+      MemorySize: 3008
+      Policies:
+      - AWSXrayWriteOnlyAccess
+      - S3CrudPolicy:
+          BucketName:
+            Ref: frontEnd
+      Runtime: nodejs12.x
+      Timeout: 30
+      Tracing: Active
+    Type: AWS::Serverless::Function
+  deployFrontEndDeployTrigger:
+    DependsOn: DeploymentMarkerTagOHFMQQ
+    Properties:
+      DeploymentTimestamp:
+        Ref: DeploymentTimestamp
+      ServiceToken:
+        Fn::GetAtt:
+        - deployFrontEnd
+        - Arn
+    Type: Custom::FunctionDeployTrigger
+  frontEnd:
+    DependsOn: DeploymentMarkerTagOHFMQQ
+    Properties:
+      BucketName:
+        Fn::Sub: ${AWS::StackName}-frontend-${AWS::AccountId}
+      WebsiteConfiguration:
+        IndexDocument: index.html
+    Type: AWS::S3::Bucket
+  getEvent:
+    DependsOn: DeploymentMarkerTagOHFMQQ
+    Properties:
+      CodeUri: getEvent
+      Description:
+        Fn::Sub:
+        - Stack ${StackTagName} Environment ${EnvironmentTagName} Function ${ResourceName}
+        - ResourceName: getEvent
+      Environment:
+        Variables:
+          BUCKET_ARN:
+            Fn::GetAtt:
+            - frontEnd
+            - Arn
+          BUCKET_NAME:
+            Ref: frontEnd
+      Events:
+        stSchemaConnectorGET:
+          Properties:
+            ApiId:
+              Ref: stSchemaConnector
+            Method: GET
+            Path: /
+            PayloadFormatVersion: '2.0'
+            TimeoutInMillis: 29000
+          Type: HttpApi
+      FunctionName:
+        Fn::Sub: ${AWS::StackName}-getEvent
+      Handler: index.handler
+      MemorySize: 3008
+      Policies:
+      - AWSXrayWriteOnlyAccess
+      - S3CrudPolicy:
+          BucketName:
+            Ref: frontEnd
+      Runtime: nodejs12.x
+      Timeout: 30
+      Tracing: Active
+    Type: AWS::Serverless::Function
+  stSchema:
+    DependsOn: DeploymentMarkerTagOHFMQQ
+    Properties:
+      CodeUri: stSchema
+      Description:
+        Fn::Sub:
+        - Stack ${StackTagName} Environment ${EnvironmentTagName} Function ${ResourceName}
+        - ResourceName: stSchema
+      FunctionName:
+        Fn::Sub: ${AWS::StackName}-stSchema
+      Handler: index.handler
+      MemorySize: 3008
+      Policies:
+      - AWSXrayWriteOnlyAccess
+      Runtime: nodejs12.x
+      Timeout: 30
+      Tracing: Active
+    Type: AWS::Serverless::Function
+  stSchemaConnector:
+    DependsOn: DeploymentMarkerTagOHFMQQ
+    Properties:
+      Auth:
+        Authorizers:
+          stAuthorizer:
+            IdentitySource: $request.header.Authorization
+            JwtConfiguration:
+              audience:
+              - Ref: StUserPoolClient
+              issuer:
+                Fn::Sub: https://cognito-idp.${AWS::Region}.amazonaws.com/${UserPool}
+          webAuthorizer:
+            IdentitySource: $request.header.Authorization
+            JwtConfiguration:
+              audience:
+              - Ref: WebUserPoolClient
+              issuer:
+                Fn::Sub: https://cognito-idp.${AWS::Region}.amazonaws.com/${UserPool}
+        DefaultAuthorizer: webAuthorizer
+      CorsConfiguration:
+        AllowMethods:
+        - '*'
+        AllowOrigins:
+        - '*'
+      DefinitionBody:
+        info:
+          title:
+            Fn::Sub: ${AWS::StackName}-HttpApi
+          version: '1.0'
+        openapi: '3.0'
+        paths:
+          /:
+            get:
+              responses: {}
+          /stSchema:
+            post:
+              responses: {}
+      FailOnWarnings: true
+    Type: AWS::Serverless::HttpApi
+  stSchemaProxy:
+    DependsOn: DeploymentMarkerTagOHFMQQ
+    Properties:
+      CodeUri: stSchemaProxy
+      Description:
+        Fn::Sub:
+        - Stack ${StackTagName} Environment ${EnvironmentTagName} Function ${ResourceName}
+        - ResourceName: stSchemaProxy
+      Environment:
+        Variables:
+          FUNCTION_ARN:
+            Fn::GetAtt:
+            - stSchema
+            - Arn
+          FUNCTION_NAME:
+            Ref: stSchema
+      Events:
+        stSchemaConnectorPOSTstSchema:
+          Properties:
+            ApiId:
+              Ref: stSchemaConnector
+            Auth:
+              Authorizer: NONE
+            Method: POST
+            Path: /stSchema
+            PayloadFormatVersion: '2.0'
+            TimeoutInMillis: 29000
+          Type: HttpApi
+      FunctionName:
+        Fn::Sub: ${AWS::StackName}-stSchemaProxy
+      Handler: index.handler
+      MemorySize: 3008
+      Policies:
+      - AWSXrayWriteOnlyAccess
+      - LambdaInvokePolicy:
+          FunctionName:
+            Ref: stSchema
+      Runtime: nodejs12.x
+      Timeout: 30
+      Tracing: Active
+    Type: AWS::Serverless::Function
+Transform: AWS::Serverless-2016-10-31
