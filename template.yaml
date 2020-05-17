@@ -93,6 +93,10 @@ Resources:
         - AWSXrayWriteOnlyAccess
         - S3CrudPolicy:
             BucketName: !Ref frontEnd
+      Environment:
+        Variables:
+          BUCKET_NAME: !Ref frontEnd
+          BUCKET_ARN: !GetAtt frontEnd.Arn
       Events:
         stSchemaConnectorGET:
           Type: HttpApi
@@ -102,10 +106,6 @@ Resources:
             ApiId: !Ref stSchemaConnector
             PayloadFormatVersion: '2.0'
             TimeoutInMillis: 29000
-      Environment:
-        Variables:
-          BUCKET_NAME: !Ref frontEnd
-          BUCKET_ARN: !GetAtt frontEnd.Arn
   stSchemaConnector:
     Type: AWS::Serverless::HttpApi
     Properties:
