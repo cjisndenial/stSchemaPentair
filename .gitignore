@@ -1,3 +1,5 @@
 .stackery
 .aws-sam
 .notes  
+node_modules
+package-lock.json

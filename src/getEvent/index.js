@@ -1,18 +1,29 @@
 const AWS = require('aws-sdk');
-const sqs = new AWS.SQS();
 const s3 = new AWS.S3();
 
 exports.handler = async (event, context) => {
-  console.log(event);
-  
-  const sqsParams = {
-    MessageBody: `Entering the event queue`,
-    QueueUrl: process.env.QUEUE_URL,
-    DelaySeconds: 30
+  //console.log(event);
 
+  try {
+    const params = {
+        Bucket: process.env.BUCKET_NAME,
+        Key: "index.html"
+    };
+    var index = await s3.getObject(params).promise();
+  } catch (error) {
+      console.log(error);
+      return;
+  }
+  //console.log(index);
+
+  const response ={ 
+    "statusCode": 200, 
+    "headers": {
+      "Content-Type": index.ContentType
+    },
+    "body": index.Body.toString() 
   };
-  const response = await sqs.sendMessage(sqsParams).promise();
-  console.log(response);
-
-  return { status: 200, body: 'It worked!' };
+  //console.log(response);
+  
+  return response;
 }
