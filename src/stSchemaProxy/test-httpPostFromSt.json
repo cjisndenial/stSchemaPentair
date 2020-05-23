@@ -1,0 +1,38 @@
+{
+    "version": "2.0",
+    "routeKey": "POST /stSchema",
+    "rawPath": "/stSchema",
+    "rawQueryString": "",
+    "headers": {
+        "accept": "*/*",
+        "accept-encoding": "gzip,deflate",
+        "content-length": "1144",
+        "content-type": "application/json",
+        "host": "u7iov4yg2f.execute-api.us-west-2.amazonaws.com",
+        "user-agent": "node-fetch/1.0 (+https://github.com/bitinn/node-fetch)",
+        "x-amzn-trace-id": "Root=1-5ec5fc1c-2544a31a8afa035226b2e7f4",
+        "x-forwarded-for": "52.207.47.224",
+        "x-forwarded-port": "443",
+        "x-forwarded-proto": "https"
+    },
+    "requestContext": {
+        "accountId": "717142268192",
+        "apiId": "u7iov4yg2f",
+        "domainName": "u7iov4yg2f.execute-api.us-west-2.amazonaws.com",
+        "domainPrefix": "u7iov4yg2f",
+        "http": {
+            "method": "POST",
+            "path": "/stSchema",
+            "protocol": "HTTP/1.1",
+            "sourceIp": "52.207.47.224",
+            "userAgent": "node-fetch/1.0 (+https://github.com/bitinn/node-fetch)"
+        },
+        "requestId": "M3RUciomvHcEPJQ=",
+        "routeKey": "POST /stSchema",
+        "stage": "$default",
+        "time": "21/May/2020:03:57:16 +0000",
+        "timeEpoch": 1590033436370
+    },
+    "body": "{\"headers\":{\"schema\":\"st-schema\",\"version\":\"1.0\",\"interactionType\":\"discoveryRequest\",\"requestId\":\"17D6365E-0157-4128-9A80-04A4AA6F5D8B\"},\"authentication\":{\"tokenType\":\"Bearer\",\"token\":\"eyJraWQiOiJhR3lTdXQrd0p6ZWZaMDBrek9xQ2oyM0tXWjBLc2NKcnZQM3k3XC9kaHFtYz0iLCJhbGciOiJSUzI1NiJ9.eyJzdWIiOiI2MDk3MjVmNy1iMWE4LTQzYzMtODE5Yi1hODI4ZGRhYjg3MzgiLCJ0b2tlbl91c2UiOiJhY2Nlc3MiLCJzY29wZSI6ImF3cy5jb2duaXRvLnNpZ25pbi51c2VyLmFkbWluIHBob25lIG9wZW5pZCBwcm9maWxlIGVtYWlsIiwiYXV0aF90aW1lIjoxNTg5NzMxMTQ2LCJpc3MiOiJodHRwczpcL1wvY29nbml0by1pZHAudXMtd2VzdC0yLmFtYXpvbmF3cy5jb21cL3VzLXdlc3QtMl9TZXBYTkxoY2wiLCJleHAiOjE1OTAwMzU2NDIsImlhdCI6MTU5MDAzMjA0MiwidmVyc2lvbiI6MiwianRpIjoiNWUxZmUyMGQtNDY2Yy00YzU5LWIzNzYtOTExYjZmODEzYTZjIiwiY2xpZW50X2lkIjoiMjNnb3BtaWlvbTJva2dnaHNyOWZ0aHNldDAiLCJ1c2VybmFtZSI6ImNqaXNuZGVuaWFsIn0.tUgXgR-lmMbztMJsMzT_ITg3-hoqbuqEeQ6jvfVhPdqYagMmog6TNEnLsauq0m4EzF3CIsaWx1sCpU175K8hybCreGMuPyqnW0T7mWaf9_8tOS4v6WFYdDVsvOCXTiJIGqPofaRu-LUp4R7OjuMUEeLLlUrLCzKpDU9HN6ziwTqAaTVS9sTNFJ8zKBC6-kQzNKIGEc971Q_k0yREYMUXmjc_caHgJPaxT5xowe7wj0N_XCD19S8K9R3_oipq12ziocqg5akbYAocvjVOep2pH2cbAQ-ACbnwWBzwEsOUuO7UbdbjQEJUsLZ5zifkOK9J8Hhc0_SuNxYayxjk6F2u6A\"}}",
+    "isBase64Encoded": false
+}
